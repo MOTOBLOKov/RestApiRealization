@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+    <head>
+       <title>REST</title>
+       <meta charset="utf-8" />
+       <link rel="stylesheet" href="css/site.css"></link>
+    </head>
+    <body>      
+        <h1>REST/API Realization</h1>
+        
+        <form>
+            <p></p>
+            <input type="text" placeholder="Работа" name="workField"/>
+            <p></p>
+            <input type="text" placeholder="Возраст" name="ageField"/>
+            <p></p>
+            <input type="button" value="Cохранить" onclick="addUserFromForm({work:document.forms[0].workField.value , age:document.forms[0].ageField.value , id:idu++})"/> <input type="reset" value="Сбросить">
+        </form>
+        
+        <h1>список пользователей:</h1>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Id</th><th>Профессия</th><th>Возраст</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+        <script>
+ 
+            const form = document.forms[0]
+            const netTool = new XMLHttpRequest()
+            let idu = 0;
+
+            function getUsers() {
+                netTool.onload = (context) => {
+                    const list = JSON.parse(context.currentTarget.response) 
+                    
+                    list.forEach(element => {
+                        AddUserToTable(element)
+                    });
+                }
+
+                netTool.open("GET" , `${document.URL}getUsers`);
+                netTool.send()
+            }
+            function AddUserToTable(user) {
+                const tbl = document.querySelector("tbody")
+                
+                const tbltr = document.createElement("tr")
+
+                const attrid = document.createAttribute("id")
+                attrid.value = user.id
+                
+                tbltr.setAttributeNode(attrid)
+
+                const id = document.createElement("td")
+                id.append(document.createTextNode(user.id))
+
+                const work = document.createElement("td")
+                work.append(document.createTextNode(user.work))
+
+                const age = document.createElement("td")
+                age.append(document.createTextNode(user.age))
+
+                const delButton = document.createElement("button")
+                delButton.innerText = "Удалить"
+                delButton.style.width = "80px"
+                delButton.style.height = "24px"
+
+                const changeButton = document.createElement("button")
+                changeButton.innerText = "Изменить"
+                changeButton.style.width = "80px"
+                changeButton.style.height = "24px"
+
+                changeButton.onclick = async()=>{
+                    const resp = await fetch(`${document.URL}changeUser` , {
+                        method:"PATCH",
+                        headers:{
+                            "Content-Type" : "Application/json"
+                        },
+                        body: JSON.stringify({
+                            work:work.innerText = document.forms[0].workField.value,
+                            age:age.innerText = document.forms[0].ageField.value,
+                            id:user.id
+                        })
+                    })
+
+                    if(resp.status == 200){
+                       work.innerText = document.forms[0].workField.value
+                       age.innerText = document.forms[0].ageField.value 
+                    }
+                }
+ 
+                delButton.onclick = async() => {
+                    const resp = await fetch(`${document.URL}removeUser` , {
+                        method:"DELETE",
+                        headers:{
+                            "Content-Type" : "Application/json"
+                        },
+                        body: `\"${user.id}\"`
+                    })
+                    
+                    if(resp.status == 200) {
+                        tbl.removeChild(tbltr)
+                    }
+                }
+
+                tbltr.append(id)
+                tbltr.append(work)
+                tbltr.append(age)
+                tbltr.append(delButton)
+                tbltr.append(changeButton)
+
+                tbl.append(tbltr)
+                idu = user.id
+                idu++
+            }
+            
+            async function addUserFromForm(user){
+                const resp = await fetch(`${document.URL}addUser` , {
+                    method:"POST",
+                    headers: { "Content-Type" : "application/json" },
+                    body: JSON.stringify(user)
+                })
+                if(resp.status == 200)
+                {
+                    AddUserToTable(user)
+                }
+            }
+            getUsers()
+        </script>
+    </body>
+</html>
